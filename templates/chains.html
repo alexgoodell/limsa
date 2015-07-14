@@ -1,0 +1,12 @@
+{% extends "base.html" %} {% block title %}Chains{% endblock %} {% block page_content %}
+<div class="page-header">
+    <h1>Chains</h1> ￼￼￼￼￼
+</div>
+
+<ul>
+{% for chain in chains %}
+	<li> {{ chain.name }}
+{% endfor %}
+</ul>
+
+{% endblock %}

@@ -21,6 +21,9 @@ class NameForm(Form):
 	name = StringField('What is your name?', validators=[Required()]) 
 	submit = SubmitField('Submit')
 
+
+#### ---------------- Routes -------------------------
+
 @app.route('/', methods=['GET', 'POST']) 
 def index():
 	form = NameForm()
@@ -38,9 +41,20 @@ def index():
 def user(name):
 	return render_template('user.html', name=name)
 
+
+@app.route('/chains') 
+def chains_view():
+	chains = Chain.query.all()
+	return render_template('chains.html', chains=chains)
+
 # if __name__ == '__main__':
 # 	app.run(debug=True)
 
+
+
+
+
+#### ---------------- Models -------------------------
 
 from flask.ext.sqlalchemy import SQLAlchemy
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -52,7 +66,57 @@ app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
 db = SQLAlchemy(app)
 
 
-#### Models
+class Chain(db.Model):
+	__tablename__ = 'chains'
+	id = db.Column(db.Integer, primary_key=True)
+	name = db.Column(db.String(64), unique=True)
+	states = db.relationship('State', backref='chain')
+
+	def __repr__(self):
+		return '<Chain %r>' % self.name
+
+class State(db.Model):
+	__tablename__ = 'states'
+	id = db.Column(db.Integer, primary_key=True)
+	name = db.Column(db.String(64), unique=True)
+	chain_id = db.Column(db.Integer,db.ForeignKey('chains.id'))
+
+	def __repr__(self):
+		return '<State %r>' % self.name
+
+
+
+
+
+# type State struct {
+# 	Id                        int
+# 	Model_id                  int
+# 	Name                      string
+# 	Is_uninitialized_state    bool
+# 	Is_uninitialized_2_state  bool
+# 	Is_disease_specific_death bool
+# 	Is_other_death            bool
+# 	Is_natural_causes_death   bool
+# }
+
+# type Interaction struct {
+# 	Id                int
+# 	In_state_id       int
+# 	From_state_id     int
+# 	To_state_id       int
+# 	Adjustment        float64
+# 	Effected_model_id int
+# 	PSA_id            int
+# }
+
+# type TransitionProbability struct {
+# 	Id      int
+# 	From_id int
+# 	To_id   int
+# 	Tp_base float64
+# 	PSA_id  int
+# }
+
 
 class Role(db.Model):
 	__tablename__ = 'roles'
@@ -72,15 +136,16 @@ class User(db.Model):
 	def __repr__(self):
 		return '<User %r>' % self.username
 
+
+
+
+### Migration manager
+
 from flask.ext.migrate import Migrate, MigrateCommand
 
 migrate = Migrate(app, db)
 manager.add_command('db', MigrateCommand)
 
-
-# def make_shell_context():
-# 	return dict(app=app, db=db, User=User, Role=Role)
-# manager.add_command("shell", Shell(make_context=make_shell_context))
 
 if __name__ == '__main__': 
 	manager.run()
