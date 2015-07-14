@@ -72,6 +72,11 @@ class User(db.Model):
 	def __repr__(self):
 		return '<User %r>' % self.username
 
+from flask.ext.migrate import Migrate, MigrateCommand
+
+migrate = Migrate(app, db)
+manager.add_command('db', MigrateCommand)
+
 
 # def make_shell_context():
 # 	return dict(app=app, db=db, User=User, Role=Role)
