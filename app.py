@@ -142,7 +142,10 @@ class Raw_input(db.Model):
 	__tablename__ = 'raw_inputs'
 	id = db.Column(db.Integer, primary_key=True)
 	name = db.Column(db.String(64), unique=True)
+	slug = db.Column(db.String(64), unique=True)
 	value = db.Column(db.Float)
+	low = db.Column(db.Float)
+	high = db.Column(db.Float)
 	reference_id = db.Column(db.Integer,db.ForeignKey('references.id'))
 
 	def __repr__(self):
@@ -151,8 +154,8 @@ class Raw_input(db.Model):
 class Reference(db.Model):
 	__tablename__ = 'references'
 	id = db.Column(db.Integer, primary_key=True)
-	name = db.Column(db.String(64), unique=True)
-	bibtex = db.Column(db.String(2000), unique=True)
+	name = db.Column(db.String(64))
+	bibtex = db.Column(db.String(2000))
 	raw_data = db.relationship('Raw_input', backref='reference')
 
 	def __repr__(self):
@@ -192,10 +195,10 @@ migrate = Migrate(app, db)
 manager.add_command('db', MigrateCommand)
 
 
-# if __name__ == '__main__': 
-# 	manager.run()
+if __name__ == '__main__': 
+	manager.run()
 
-if __name__ == '__main__':
-	app.run(host='0.0.0.0')
+# if __name__ == '__main__':
+# 	app.run(host='0.0.0.0')
 
 
