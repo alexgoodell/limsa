@@ -73,7 +73,7 @@ class Chain(db.Model):
 	states = db.relationship('State', backref='chain')
 
 	def __repr__(self):
-		return '<Chain %r>' % self.name
+		return self.name
 
 class State(db.Model):
 	__tablename__ = 'states'
@@ -82,21 +82,48 @@ class State(db.Model):
 	chain_id = db.Column(db.Integer,db.ForeignKey('chains.id'))
 
 	def __repr__(self):
-		return '<State %r>' % self.name
+		return self.name
 
+class Transition_probability(db.Model):
+	__tablename__ = 'transition_probabilities'
+	id = db.Column(db.Integer, primary_key=True)
 
+	From_state_id = db.Column(db.Integer,db.ForeignKey('states.id'))
+	To_state_id = db.Column(db.Integer,db.ForeignKey('states.id'))
 
+	From_state = db.relationship("State", foreign_keys=[From_state_id])
+	To_state = db.relationship("State", foreign_keys=[To_state_id])
 
+	Tp_base = db.Column(db.Float)
 
-# type State struct {
-# 	Id                        int
-# 	Model_id                  int
-# 	Name                      string
-# 	Is_uninitialized_state    bool
-# 	Is_uninitialized_2_state  bool
-# 	Is_disease_specific_death bool
-# 	Is_other_death            bool
-# 	Is_natural_causes_death   bool
+	def __repr__(self):
+		return self.From_state.name + " => " + self.To_state.name
+
+class Interaction(db.Model):
+	__tablename__ = 'interactions'
+	id = db.Column(db.Integer, primary_key=True)
+
+	In_state_id = db.Column(db.Integer,db.ForeignKey('states.id'))
+	From_state_id = db.Column(db.Integer,db.ForeignKey('states.id'))
+	To_state_id = db.Column(db.Integer,db.ForeignKey('states.id'))
+
+	In_state = db.relationship("State", foreign_keys=[In_state_id])
+	From_state = db.relationship("State", foreign_keys=[From_state_id])
+	To_state = db.relationship("State", foreign_keys=[To_state_id])
+
+	Adjustment = db.Column(db.Float)
+
+	Effected_chain_id = db.Column(db.Integer,db.ForeignKey('chains.id'))
+
+	def __repr__(self):
+		return self.In_state.name + " affects " + self.From_state.name + " => " + self.To_state.name
+
+# type TransitionProbability struct {
+# 	Id      int
+# 	From_id int
+# 	To_id   int
+# 	Tp_base float64
+# 	PSA_id  int
 # }
 
 # type Interaction struct {
@@ -109,36 +136,54 @@ class State(db.Model):
 # 	PSA_id            int
 # }
 
-# type TransitionProbability struct {
-# 	Id      int
-# 	From_id int
-# 	To_id   int
-# 	Tp_base float64
-# 	PSA_id  int
-# }
 
 
-class Role(db.Model):
-	__tablename__ = 'roles'
+class Raw_input(db.Model):
+	__tablename__ = 'raw_inputs'
 	id = db.Column(db.Integer, primary_key=True)
 	name = db.Column(db.String(64), unique=True)
-	users = db.relationship('User', backref='role')
+	value = db.Column(db.Float)
+	reference_id = db.Column(db.Integer,db.ForeignKey('references.id'))
 
 	def __repr__(self):
-		return '<Role %r>' % self.name
+		return self.name
 
-class User(db.Model):
-	__tablename__ = 'users'
+class Reference(db.Model):
+	__tablename__ = 'references'
 	id = db.Column(db.Integer, primary_key=True)
-	username = db.Column(db.String(64), unique=True, index=True)
-	role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
+	name = db.Column(db.String(64), unique=True)
+	bibtex = db.Column(db.String(2000), unique=True)
+	raw_data = db.relationship('Raw_input', backref='reference')
 
 	def __repr__(self):
-		return '<User %r>' % self.username
+		return self.name
 
 
+#### ---------------- Admin -------------------------
 
 
+from flask.ext.superadmin import Admin, model
+
+
+ # Create admin
+admin = Admin(app, 'Simple Models')
+
+# Add views
+admin.register(Chain, session=db.session)
+admin.register(State, session=db.session)
+admin.register(Raw_input, session=db.session)
+admin.register(Reference, session=db.session)
+admin.register(Transition_probability, session=db.session)
+admin.register(Interaction, session=db.session)
+
+
+# admin.add_view(sqlamodel.ModelView(Post, session=db.session))
+
+# Create DB
+db.create_all()
+
+
+# Start app
 ### Migration manager
 
 from flask.ext.migrate import Migrate, MigrateCommand
@@ -147,10 +192,10 @@ migrate = Migrate(app, db)
 manager.add_command('db', MigrateCommand)
 
 
-if __name__ == '__main__': 
-	manager.run()
+# if __name__ == '__main__': 
+# 	manager.run()
 
-
-
+if __name__ == '__main__':
+	app.run(host='0.0.0.0')
 
 
