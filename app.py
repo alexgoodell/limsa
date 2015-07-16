@@ -80,6 +80,8 @@ class State(db.Model):
 	id = db.Column(db.Integer, primary_key=True)
 	name = db.Column(db.String(64), unique=True)
 	chain_id = db.Column(db.Integer,db.ForeignKey('chains.id'))
+	Chain = db.relationship("Chain", foreign_keys=[chain_id])
+
 
 	def __repr__(self):
 		return self.name
@@ -95,6 +97,11 @@ class Transition_probability(db.Model):
 	To_state = db.relationship("State", foreign_keys=[To_state_id])
 
 	Tp_base = db.Column(db.Float)
+
+	Is_dynamic = db.Column(db.Boolean)
+
+	Chain_id = db.Column(db.Integer,db.ForeignKey('chains.id'))
+	Chain = db.relationship("Chain", foreign_keys=[Chain_id])
 
 	def __repr__(self):
 		return self.From_state.name + " => " + self.To_state.name
