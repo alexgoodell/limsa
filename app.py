@@ -1,3 +1,4 @@
+
 import os
 from flask import Flask, render_template, session, redirect, url_for, flash
 app = Flask(__name__)
@@ -78,11 +79,12 @@ class Chain(db.Model):
 class State(db.Model):
 	__tablename__ = 'states'
 	id = db.Column(db.Integer, primary_key=True)
-	name = db.Column(db.String(64), unique=True)
+	name = db.Column(db.String(64))
 	chain_id = db.Column(db.Integer,db.ForeignKey('chains.id'))
 	Chain = db.relationship("Chain", foreign_keys=[chain_id])
 
 
+	# TODO: Add chain name to representation
 	def __repr__(self):
 		return self.name
 
