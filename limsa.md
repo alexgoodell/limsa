@@ -184,47 +184,6 @@ number_of_infections_per_infected = Raw_input(
 save(number_of_infections_per_infected)
 ```
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 We should also create a variable that represents a transmissability coefficient
 to adjust during calibration
 
@@ -915,28 +874,301 @@ Image(filename='file.png')
 #HIV disease
 
 Now, lets turn our attention to the HIV model. Let's start by building the
-disease model. Because the transition probabilites for infection are dynamic, we
-need to build some raw inputs.
+disease model. Let's first build the states.
+
+```python
+
+# get TB resistance chain
+hiv_disease_chain = Chain.query.filter_by(name="HIV disease").first()
+
+# create the chains we need
+state_names = ["Uninfected", "Early (CD4>500)", "Medium (350<CD4<500)",
+    "Late (200<CD4<350)", "Advanced (100<CD4<200)", "AIDS (CD4<100)", 
+    "Early (CD4>500)"]
+
+# save them with TB resistance chain
+for state_name in state_names:
+    the_state = State(name=state_name,chain=hiv_disease_chain)
+    save(the_state)
+    
+# print chains from database
+print State.query.filter_by(chain=hiv_disease_chain).all()
+
+
+```
+
+
+Because the transition probabilites for infection are dynamic, we need to build some raw inputs.
 
 Firstly, let's look at condom effectiveness. Let's assume a 0.9 to 1 low and
 high
 
 ```python
+
+reference = Reference(name="Alistar, S. S., Grant, P. M. & Bendavid, E. Comparative effectiveness and cost-effectiveness of antiretroviral therapy and pre-exposure prophylaxis for HIV prevention in South Africa. BMC Med. 12, 46 (2014).")
+
 condom_effectiveness = Raw_input(
-    name="Percent of all active that will be treated",
-    slug="overall_percent_active_treated",
-    value=percent_diagnosed_treated.value * case_detection_rate.value,
-    low=percent_diagnosed_treated.low * case_detection_rate.low,
-    high=percent_diagnosed_treated.high * case_detection_rate.high,
+    name="Condom effectiveness",
+    slug="condom_effectiveness",
+    value=0.95,
+    low=0.9,
+    high=1,
+    reference=reference
 )
 
 save(condom_effectiveness)
 ```
 
-```python
-print overall_percent_active_treated
-```
+Next, we can look at condom use. 
 
 ```python
 
+reference = Reference(name="http://www.ncbi.nlm.nih.gov/pmc/articles/PMC2654146/pdf/U9G-85-S1-0072.pdf, 2007")
+
+condom_use = Raw_input(
+    name="Proportion of times people use condoms",
+    slug="condom_use",
+    value=0.25,
+    low=0.1,
+    high=0.4,
+    reference=reference
+)
+
+save(condom_use)
 ```
+
+And now many partnerships people have in general. We will assume the high and low of 1 and 2. 
+
+```python
+
+reference = Reference(name="http://www.ncbi.nlm.nih.gov/pmc/articles/PMC2654146/pdf/U9G-85-S1-0072.pdf, 2007")
+
+general_parternships = Raw_input(
+    name="Number of partnerships",
+    slug="general_parternships",
+    value=1.19,
+    low=1,
+    high=2,
+    reference=reference
+)
+
+```
+
+
+Now let's look at the transmission likelyhood per partnership. Note: the sources provide a high and low; I've just taken the mean as our best estimate.
+
+```python
+
+reference = Reference(name="Alistar 137 using data from Cohen 33 and Hollingsworth 138")
+
+trans_per_partnership = Raw_input(
+    name="Transmission likelyhood per partnership",
+    slug="trans_per_partnership",
+    value=0.077,
+    low=0.004,
+    high=0.15,
+    reference=reference
+)
+
+save(trans_per_partnership)
+```
+
+We also need information about the sexual behavior of the different risk populations.
+
+###Sex workers
+
+The condom use of sex workers.
+
+```python
+
+reference = Reference(name="As cited in 139 Billinghurst, K. 1999. Chief Medical Officer,...")
+
+condom_use_sex_workers = Raw_input(
+    name="Condom use sex workers (proportion)",
+    slug="condom_use_sex_workers",
+    value=0.902,
+    low=0.50,
+    high=0.902,
+    reference=reference
+)
+    
+save(condom_use_sex_workers)
+
+```
+
+And the number of partners per year.
+
+```python
+
+reference = Reference(name="Billinghurst, K. (1999). Chief Medical Officer, CDCHIV AIDS STD Program Mpumalanga Department of Health, Unpublished project data.")
+
+csw_number_of_partners_per_year = Raw_input(
+    name="CSW number of partners per year",
+    slug="csw_number_of_partners_per_year",
+    value=25,
+    low=10,
+    high=100,
+)
+
+save(csw_number_of_partners_per_year)
+
+```
+    
+And the number of episodes per client.
+
+```python
+
+reference = Reference(name="Marseille, E., Kahn, J. G., Billinghurst, K. & Saba, J. Cost-effectiveness of...")
+
+csw_episodes_per_client = Raw_input(
+    name="Number of episodes per client",
+    slug="csw_episodes_per_client",
+    value=2,
+    low=1,
+    high=5,
+)
+
+save(csw_episodes_per_client)
+```
+
+And the proportion of men who use the services
+
+```python
+
+reference = Reference(name="From surrounding countries, http://www.ncbi.nlm.nih.gov/pmc/articles/PMC2576731/")
+
+prop_mem_use_services = Raw_input(
+    name="Proportion of men who use CSW services",
+    slug="prop_mem_use_services",
+    value=0.015,
+    low=0.02,
+    high=0.03,
+    reference=reference
+)
+
+save(prop_mem_use_services)
+
+```
+
+###Men who have sex with men
+
+The number of annual partnership for MSM - High and low are WAG
+
+```python
+
+reference = Reference(name="Extraction notes unclear")
+
+num_partners_msm = Raw_input(
+    name="The number of annual partnership for MSM",
+    slug="num_partners_msm",
+    value=4.6,
+    low=1,
+    high=10,
+    reference=reference
+)
+
+save(num_partners_msm)
+    
+
+```
+    
+
+Next, we to look at the average condom use for MSM. High and low are WAG.
+
+```python
+
+reference = Reference(name="2011** limited survey area - % reported always using condoms with male sexual partner, HIV Risk and Associations of HIV Infection among MSM in peri-urban Cape Town, South Africa")
+
+condom_use_msm = Raw_input(
+    name="average condom use for MSM",
+    slug="condom_use_msm",
+    value=0.524,
+    low=0.4,
+    high=0.6,
+    reference=reference
+)
+
+save(condom_use_msm)
+
+```
+
+###IDUs
+
+We also must look at IDUs. We assume that they use condoms 20% (10-30%) of the time.
+
+```python
+
+reference = Reference(name="Assumed")
+
+condom_use_idus = Raw_input(
+    name="IDU condom use",
+    slug="condom_use_idus",
+    value=0.2,
+    low=0.1,
+    high=0.3,
+    reference=reference
+)
+
+save(condom_use_idus)
+
+```
+    
+Can also estimate the total number of injections per year per IDUs. High and low are WAGs.
+
+```python
+reference = Reference(name="Assumed from Russian data. Notes from extractor: <30 : 64%, >= 30: 36, Potential for 2009 Bridging of HIV Transmission in the Russian Federation, http://www.springerlink.com/content/k24j760325026677/fulltext.pdf")
+
+num_injections_idu_annual = Raw_input(
+    name="total number of injections per year per IDUs",
+    slug="num_injections_idu_annual",
+    value=264,
+    low=200,
+    high=300,
+    reference=reference
+)
+
+save(num_injections_idu_annual)
+```
+
+We must also estimate their annual partnerships. High and low are WAGs.
+
+```python
+
+reference = Reference(name="Assumed from Tanzanian data. Notes from extractor: Reid, Savanna R. Injection Drug Use, Unsafe Medical Injections, and HIV in Africa: A Systematic Review. HRJ. ., n.d. Web. 25 Feb. 2013.")
+
+partnerships_idus = Raw_input(
+    name="Annual partnerships, IDUs",
+    slug="partnerships_idus",
+    value=2.4,
+    low=2,
+    high=3,
+    reference=reference
+)
+
+save(partnerships_idus)
+
+
+```
+
+We must also estimate the proportion of IDUs that are male
+
+```python
+
+reference = Reference(name="Assumed")
+
+prop_male_idus = Raw_input(
+    name="proportion of IDUs that are male",
+    slug="prop_male_idus",
+    value=0.80,
+    low=0.80,
+    high=0.80,
+    reference=reference
+)
+
+save(prop_male_idus)
+    
+```
+
+###Disease progression
+
+

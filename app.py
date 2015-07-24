@@ -163,7 +163,7 @@ class Raw_input(db.Model):
 class Reference(db.Model):
 	__tablename__ = 'references'
 	id = db.Column(db.Integer, primary_key=True)
-	name = db.Column(db.String(64))
+	name = db.Column(db.String(4000))
 	bibtex = db.Column(db.String(2000))
 	raw_data = db.relationship('Raw_input', backref='reference')
 

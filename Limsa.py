@@ -1,30 +1,3 @@
-
-# coding: utf-8
-
-# #Limsa
-# _Locally-interacting Markov models for HIV, TB, DM in South Africa_
-# 
-# This is an IPython/Jupyter notebook. It is a method for creating reproducable research. Essentially, it is a way to show "literate programming", or very well-documented code for scientific processes. It mixes normal text with code blocks that can be run and re-run independently. 
-# 
-# The purpose of this IPython notebook is to organize the data that will be used to creat the Limsa model in Go. Normally, I would complete this "pre-processing" task in Excel, but I want to try something more detailed and reproducible. 
-# 
-# This notebook is connected to a python application and database that will store all the tables for the Limsa model. As we progress, we will build these tables. *All changes to the database should be made through this notebook, so a record of all changes is available.* 
-# 
-# The database has tables:
-# * Chains
-# * States
-# * Transition probabilities
-# * Interactions
-# * References
-# * Raw inputs
-# 
-# To view the results of the tables, visit: http://limsa.org/admin
-# 
-# The Go model will then use these tables to run the model.
-# 
-
-# In[292]:
-
 from IPython.display import Image
 #connect to application
 from app import * 
@@ -60,7 +33,6 @@ db.session.query(Reference).delete()
 db.session.commit()
 
 
-
 def link_tps_to_chains():
     tps = Transition_probability.query.all()
     for tp in tps:
@@ -82,12 +54,6 @@ def visualize_chain(chain):
             G.add_edge(tp.From_state.name, tp.To_state.name, label=tp.Tp_base, fontname="ArialMT", fontsize="10") # adds edge 'b'-'c' (and also nodes 'b', 'c')
     G.layout(prog='dot')
     G.draw('file.png')
-
-
-# First, let's create the different chains the model will need.
-
-# In[293]:
-
 # create the chains we need
 chain_names = ['TB disease', 'TB treatment', 'TB resistance',
           'HIV disease', 'HIV treatment', 'HIV risk groups',
@@ -98,20 +64,6 @@ for chain_name in chain_names:
     
 # print chains from database
 Chain.query.all()
-
-
-# #TB Disease
-# 
-# Great. Now let's work on the TB disease chain. 
-# 
-# ###States
-# 
-# First, let's define the different TB states. Here is our state-transition diagram:
-# 
-# ![](static/imgs/tb.jpg)
-
-# In[294]:
-
 # get TB chain
 tb_chain = Chain.query.filter_by(name="TB disease").first()
 
@@ -126,16 +78,6 @@ for state_name in state_names:
     
 # print chains from database
 State.query.filter_by(chain=tb_chain).all()
-
-
-# ###Gathering raw inputs
-# 
-# The transition from ``uninfected`` to any of the infected states is a function of how many people are infected with TB. This will be calculated dynamically, based on the estimated number of contacts and infectivity of contacts. In order to be able to use this data in the Go model, I've created a table called `Raw_inputs`. Let's save this information there. Each Raw_inputs row has a `value`, which represents its base value, as well as a verbose `name`, a `high` and `low`. In addition, there is a `slug`. This is a shortened version of the name, and it will be imported and accessable from the Go code. This is accomplished by begining the project setup with a Makefile (or setup.py) that writes a Go file importing these variables as slugs. Yes - the python program will *write* a Go program.
-# 
-# It has been shown that people with infectious TB can infect 10-15 people through close contact per year. This can be used to calculate our base case transmissability coefficient, although calibration will be needed.
-
-# In[295]:
-
 # Let's use the mean as the value
 
 low = 10.0
@@ -169,61 +111,8 @@ number_of_infections_per_infected = Raw_input(
     reference=reference
 )
 save(number_of_infections_per_infected)
-
-
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-
-# We should also create a variable that represents a transmissability coefficient to adjust during calibration
-
-# In[296]:
-
 trans_coeff = Raw_input(name="TB transmissability coefficient")
 save(trans_coeff)
-
-
-# We will also need a variable to represent the % of individuals that become slow vs fast latent.
-
-# In[297]:
-
 ## The majority develop slow latent
 name = '''
 Dye cite Sutherland 1968, 1976 Ferebee 1970, Comstock 1982, Sutherland et al 1982, 
@@ -256,12 +145,6 @@ prop_fast = Raw_input(
     reference=reference
 )
 save(prop_fast)
-
-
-# Next, we save the rate at which slow latent develop active disease, as an annual figure:
-
-# In[298]:
-
 reference=Reference(name="Dye cite Horwitz et al 1969, Barnett et al 1971, Sutherland et al 1982, Styblo 1991, Vynnycky 1996, Vynnycky & Fine 1997, this study")
 
 rate_slow_annual = Raw_input(
@@ -273,14 +156,6 @@ rate_slow_annual = Raw_input(
     reference=reference)
 
 save(rate_slow_annual)
-
-
-# Similarly, we have a rate at which fast latent develop active disease
-# 
-# 
-
-# In[299]:
-
 reference=Reference(name="Basu cites: [5, 6, 18]")
 
 rate_fast_annual = Raw_input(
@@ -292,12 +167,6 @@ rate_fast_annual = Raw_input(
     reference=reference)
 
 save(rate_fast_annual)
-
-
-# It is also estimated that 65% of cases are infectious
-
-# In[300]:
-
 reference=Reference(name="Dye cites: Styblo 1977, Murray et al 1993, Barnett & Styblo 1991")
 
 prop_infectious = Raw_input(
@@ -310,12 +179,6 @@ prop_infectious = Raw_input(
 )
 
 save(prop_infectious)
-
-
-# This is also a rate of self-cure.
-
-# In[301]:
-
 reference=Reference(name="Dye cites: Springett 1971, Olakowski 1973, NTI 1974, Enarson & Rouillon 1994, Grzybowski & Enarson 1978")
 
 rate_self_cure_annual = Raw_input(
@@ -328,12 +191,6 @@ rate_self_cure_annual = Raw_input(
 )
 
 save(rate_self_cure_annual)
-
-
-# And an ability to replase from self cure
-
-# In[302]:
-
 reference=Reference(name="Dye cites: Springett 1961, Grzybowski et al 1965, Ferebee 1970, Chan-Yeung et al 1971, Campbell 1974, Nakielna et al 1975, Styblo 1986")
 
 rate_relapse_from_self_cure_annual = Raw_input(
@@ -347,16 +204,6 @@ rate_relapse_from_self_cure_annual = Raw_input(
 
 save(rate_relapse_from_self_cure_annual)
 
-
-# Individuals can also convert from non-infectious to infection at a specified rate
-
-# In[ ]:
-
-
-
-
-# In[303]:
-
 reference = Reference(name="Dye cites Ferebee 1970, HKCS 1974")
 
 rate_conversion_annual = Raw_input(
@@ -368,14 +215,6 @@ rate_conversion_annual = Raw_input(
     reference=reference)
 
 save(rate_conversion_annual)
-
-
-# ####Mortality
-# 
-# Individuals can die of infectious active TB as well as non-infectious active TB.
-
-# In[304]:
-
 #### infectious TB
 reference = Reference(name="Dye who cites Rutledge & Crouch 1919, Berg 1939, Drolet 1938, Thompson 1943, Tatersall 1947, Lowe 1954, Springett 1971, NTI 1974, Grzybowski & Enarson 1978")
 
@@ -401,14 +240,6 @@ noninfect_tb_mort_annual = Raw_input(
 )
 
 save(noninfect_tb_mort_annual)
-
-
-# ### Transition probabilities
-# 
-# Now, we can fill in the basic transition probabilties for this chain. 
-
-# In[305]:
-
 # For later visualizaton scripts
 import pygraphviz as pgv
 import time
@@ -562,31 +393,9 @@ save(Transition_probability(
     To_state=death_state,
     Tp_base=infect_tb_mort_qt
 ))
-
-
-# Now that we've completed building the transitions matrix, we can visualize all the transitions (recursive transitions not shown).
-
-# In[306]:
-
 link_tps_to_chains()
 visualize_chain(tb_chain)
 Image(filename='file.png')
-
-
-# #TB resistance
-# 
-# Next, let's move on to discuss TB resistance. We want to model an uninfected state, as well as five different diseased states:
-# 
-# * Fully Susceptible
-# * INH-monoresistant
-# * RIF-monoresistant
-# * MDR
-# * XDR
-# 
-# Let's get the chain for resistance, and add these states to the chain.
-
-# In[307]:
-
 # get TB resistance chain
 tb_resistance_chain = Chain.query.filter_by(name="TB resistance").first()
 
@@ -601,18 +410,6 @@ for state_name in state_names:
     
 # print chains from database
 State.query.filter_by(chain=tb_resistance_chain).all()
-
-
-# ##Gathering raw inputs
-# 
-# The transition probabilities for aquiring a resistant infection are the sum of:
-# * the chance of your current strain becoming endogenously resistant
-# * the chance you will become infected with a drug-resistant strain from someone else
-# 
-# The later will need to be calculated dynamically, but we can store the former as raw input to be used by the model. Let's do that.
-
-# In[308]:
-
 reference = Reference(name="Basu calibration")
 
 # DS -> INHR
@@ -679,15 +476,6 @@ endo_rate_mdr_to_xdr_annual = Raw_input(
 )
 
 save(endo_rate_mdr_to_xdr_annual)
-
-
-# ## Transition probabilities
-# 
-# As mentioned above, these will need to be calcualted dynamically. Let's add them in, but mark them all as dynamic.
-
-# In[309]:
-
-
 # get TB resistance chain
 tb_resistance_chain = Chain.query.filter_by(name="TB resistance").first()
 
@@ -740,23 +528,9 @@ save(Transition_probability(
     To_state=xdr_state,
     Is_dynamic=True
 ))
-
-
-# We can now visualize this chain.
-
-# In[310]:
-
 link_tps_to_chains()
 visualize_chain(tb_resistance_chain)
 Image(filename='file.png')
-
-
-# #TB treatment
-# 
-# Now, let's turn our attention to the TB treatment model. In addition to the uninfected state, we need to model three diseased states: untreated (latent), untreated (active) and treated. Let's create those states.
-
-# In[311]:
-
 # get TB treatment chain
 tb_treatment_chain = Chain.query.filter_by(name="TB treatment").first()
 
@@ -770,18 +544,6 @@ for state_name in state_names:
     
 # print chains from database
 State.query.filter_by(chain=tb_treatment_chain).all()
-
-
-# ##Raw inputs
-# 
-# Now let's look at the raw data.
-# 
-# Obviously, transition from uninfected to untreated latent and untreated latent to untreated active are dynamic.
-# 
-# Treatment uptake rates for active infections are not readily available. However, there is an estimated case detection of 62% (52–75).1 
-
-# In[312]:
-
 reference = Reference(name="WHO. Global tuberculosis report 2013. (2013)")
 
 case_detection_rate = Raw_input(
@@ -794,13 +556,6 @@ case_detection_rate = Raw_input(
 )
 
 save(case_detection_rate)
-
-
-# One study of 376 confirmed active cases in South Africa suggested that only 74% of those diagnosed started treatment. I will assume that the high and low are 0.7 and 0.8
-# 
-
-# In[313]:
-
 reference = Reference(name="Botha, E. et al. From suspect to patient...")
 
 percent_diagnosed_treated = Raw_input(
@@ -813,12 +568,6 @@ percent_diagnosed_treated = Raw_input(
 )
 
 save(percent_diagnosed_treated)
-
-
-# Althougth this is not fully accurate, we can estimate the total percent of individuals who recieve treatment using these two values.
-
-# In[314]:
-
 overall_percent_active_treated = Raw_input(
     name="Percent of all active that will be treated",
     slug="overall_percent_active_treated",
@@ -828,12 +577,6 @@ overall_percent_active_treated = Raw_input(
 )
 
 save(overall_percent_active_treated)
-
-
-# We will also assume that there is a drop-out rate of 10% (5-15%)
-
-# In[315]:
-
 drop_out_rate_annual = Raw_input(
     name="Annual drop out rate",
     slug="drop_out_rate_annual",
@@ -843,14 +586,6 @@ drop_out_rate_annual = Raw_input(
 )
 
 save(drop_out_rate_annual)
-
-
-# ##Transition probabilities
-# 
-# Now let's add in the transition probabilities.
-
-# In[319]:
-
 # convert annual to quarterly 
 
 drop_out_rate_qt = convert_year_to_qt(drop_out_rate_annual.value)
@@ -896,34 +631,213 @@ save(Transition_probability(
     To_state=untreated_active_state,
      Tp_base=drop_out_rate_qt
 ))
-
-
-
-
-# Now, let's visualize this chain.
-
-# In[320]:
-
 link_tps_to_chains()
 visualize_chain(tb_treatment_chain)
 Image(filename='file.png')
 
 
-# #HIV disease
-# 
-# Now, lets turn our attention to the HIV model. Let's start by building the disease model. Because the transition probabilites for infection are dynamic, we need to build some raw inputs.
-# 
-# Firstly, let's look at condom effectiveness. Let's assume a 0.9 to 1 low and high
+# get TB resistance chain
+hiv_disease_chain = Chain.query.filter_by(name="HIV disease").first()
 
-# In[ ]:
+# create the chains we need
+state_names = ["Uninfected", "Early (CD4>500)", "Medium (350<CD4<500)",
+    "Late (200<CD4<350)", "Advanced (100<CD4<200)", "AIDS (CD4<100)", 
+    "Early (CD4>500)"]
 
-condom = Raw_input(
-    name="Percent of all active that will be treated",
-    slug="overall_percent_active_treated",
-    value=percent_diagnosed_treated.value * case_detection_rate.value,
-    low=percent_diagnosed_treated.low * case_detection_rate.low,
-    high=percent_diagnosed_treated.high * case_detection_rate.high,
+# save them with TB resistance chain
+for state_name in state_names:
+    the_state = State(name=state_name,chain=hiv_disease_chain)
+    save(the_state)
+    
+# print chains from database
+print State.query.filter_by(chain=hiv_disease_chain).all()
+
+
+
+reference = Reference(name="Alistar, S. S., Grant, P. M. & Bendavid, E. Comparative effectiveness and cost-effectiveness of antiretroviral therapy and pre-exposure prophylaxis for HIV prevention in South Africa. BMC Med. 12, 46 (2014).")
+
+condom_effectiveness = Raw_input(
+    name="Condom effectiveness",
+    slug="condom_effectiveness",
+    value=0.95,
+    low=0.9,
+    high=1,
+    reference=reference
 )
 
-save(overall_percent_active_treated)
+save(condom_effectiveness)
 
+reference = Reference(name="http://www.ncbi.nlm.nih.gov/pmc/articles/PMC2654146/pdf/U9G-85-S1-0072.pdf, 2007")
+
+condom_use = Raw_input(
+    name="Proportion of times people use condoms",
+    slug="condom_use",
+    value=0.25,
+    low=0.1,
+    high=0.4,
+    reference=reference
+)
+
+save(condom_use)
+
+reference = Reference(name="http://www.ncbi.nlm.nih.gov/pmc/articles/PMC2654146/pdf/U9G-85-S1-0072.pdf, 2007")
+
+general_parternships = Raw_input(
+    name="Number of partnerships",
+    slug="general_parternships",
+    value=1.19,
+    low=1,
+    high=2,
+    reference=reference
+)
+
+
+reference = Reference(name="Alistar 137 using data from Cohen 33 and Hollingsworth 138")
+
+trans_per_partnership = Raw_input(
+    name="Transmission likelyhood per partnership",
+    slug="trans_per_partnership",
+    value=0.077,
+    low=0.004,
+    high=0.15,
+    reference=reference
+)
+
+save(trans_per_partnership)
+
+reference = Reference(name="As cited in 139 Billinghurst, K. 1999. Chief Medical Officer,...")
+
+condom_use_sex_workers = Raw_input(
+    name="Condom use sex workers (proportion)",
+    slug="condom_use_sex_workers",
+    value=0.902,
+    low=0.50,
+    high=0.902,
+    reference=reference
+)
+    
+save(condom_use_sex_workers)
+
+
+reference = Reference(name="Billinghurst, K. (1999). Chief Medical Officer, CDCHIV AIDS STD Program Mpumalanga Department of Health, Unpublished project data.")
+
+csw_number_of_partners_per_year = Raw_input(
+    name="CSW number of partners per year",
+    slug="csw_number_of_partners_per_year",
+    value=25,
+    low=10,
+    high=100,
+)
+
+save(csw_number_of_partners_per_year)
+
+
+reference = Reference(name="Marseille, E., Kahn, J. G., Billinghurst, K. & Saba, J. Cost-effectiveness of...")
+
+csw_episodes_per_client = Raw_input(
+    name="Number of episodes per client",
+    slug="csw_episodes_per_client",
+    value=2,
+    low=1,
+    high=5,
+)
+
+save(csw_episodes_per_client)
+
+reference = Reference(name="From surrounding countries, http://www.ncbi.nlm.nih.gov/pmc/articles/PMC2576731/")
+
+prop_mem_use_services = Raw_input(
+    name="Proportion of men who use CSW services",
+    slug="prop_mem_use_services",
+    value=0.015,
+    low=0.02,
+    high=0.03,
+    reference=reference
+)
+
+save(prop_mem_use_services)
+
+
+reference = Reference(name="Extraction notes unclear")
+
+num_partners_msm = Raw_input(
+    name="The number of annual partnership for MSM",
+    slug="num_partners_msm",
+    value=4.6,
+    low=1,
+    high=10,
+    reference=reference
+)
+
+save(num_partners_msm)
+    
+
+
+reference = Reference(name="2011** limited survey area - % reported always using condoms with male sexual partner, HIV Risk and Associations of HIV Infection among MSM in peri-urban Cape Town, South Africa")
+
+condom_use_msm = Raw_input(
+    name="average condom use for MSM",
+    slug="condom_use_msm",
+    value=0.524,
+    low=0.4,
+    high=0.6,
+    reference=reference
+)
+
+save(condom_use_msm)
+
+
+reference = Reference(name="Assumed")
+
+condom_use_idus = Raw_input(
+    name="IDU condom use",
+    slug="condom_use_idus",
+    value=0.2,
+    low=0.1,
+    high=0.3,
+    reference=reference
+)
+
+save(condom_use_idus)
+
+reference = Reference(name="Assumed from Russian data. Notes from extractor: <30 : 64%, >= 30: 36, Potential for 2009 Bridging of HIV Transmission in the Russian Federation, http://www.springerlink.com/content/k24j760325026677/fulltext.pdf")
+
+num_injections_idu_annual = Raw_input(
+    name="total number of injections per year per IDUs",
+    slug="num_injections_idu_annual",
+    value=264,
+    low=200,
+    high=300,
+    reference=reference
+)
+
+save(num_injections_idu_annual)
+
+reference = Reference(name="Assumed from Tanzanian data. Notes from extractor: Reid, Savanna R. Injection Drug Use, Unsafe Medical Injections, and HIV in Africa: A Systematic Review. HRJ. ., n.d. Web. 25 Feb. 2013.")
+
+partnerships_idus = Raw_input(
+    name="Annual partnerships, IDUs",
+    slug="partnerships_idus",
+    value=2.4,
+    low=2,
+    high=3,
+    reference=reference
+)
+
+save(partnerships_idus)
+
+
+
+reference = Reference(name="Assumed")
+
+prop_male_idus = Raw_input(
+    name="proportion of IDUs that are male",
+    slug="prop_male_idus",
+    value=0.80,
+    low=0.80,
+    high=0.80,
+    reference=reference
+)
+
+save(prop_male_idus)
+    
