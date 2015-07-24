@@ -640,7 +640,7 @@ hiv_disease_chain = Chain.query.filter_by(name="HIV disease").first()
 
 # create the chains we need
 state_names = ["Uninfected", "Acute", "Early",
-    "Late", "Avdanced/AIDS" ]
+    "Late", "Advanced/AIDS" ]
 
 # save them with TB resistance chain
 for state_name in state_names:

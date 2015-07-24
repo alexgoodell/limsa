@@ -557,7 +557,7 @@ tb_resistance_chain = Chain.query.filter_by(name="TB resistance").first()
 
 # create the chains we need
 state_names = ["Uninfected","Fully Susceptible","INH-monoresistant",
-               "RIF-monoresistant","MDR","XDR"]
+               "RIF-monoresistant","MDR","XDR", "Death"]
 
 # save them with TB resistance chain
 for state_name in state_names:
@@ -726,7 +726,7 @@ untreated (active) and treated. Let's create those states.
 tb_treatment_chain = Chain.query.filter_by(name="TB treatment").first()
 
 # create the chains we need
-state_names = ["Uninfected","Untreated - Latent", "Untreated - Active", "Treated"]
+state_names = ["Uninfected","Untreated - Latent", "Untreated - Active", "Treated", "Death"]
 
 # save them with TB resistance chain
 for state_name in state_names:
@@ -883,7 +883,7 @@ hiv_disease_chain = Chain.query.filter_by(name="HIV disease").first()
 
 # create the chains we need
 state_names = ["Uninfected", "Acute", "Early",
-    "Late", "Avdanced/AIDS" ]
+    "Late", "Advanced/AIDS", "Death" ]
 
 # save them with TB resistance chain
 for state_name in state_names:
@@ -1287,3 +1287,65 @@ Image(filename='file.png')
 ```
 
 
+#HIV treatment
+
+##Raw inputs
+
+Let's first import all the raw inputs. We can look at treatment drop out rate:
+
+```python
+
+reference = Reference(name="Allistar")
+
+hiv_treatment_drop_out_annual = Raw_input(
+    name="HIV treatment drop out",
+    slug="hiv_treatment_drop_out_annual",
+    value=0.02,
+    low=0,
+    high=0.02,
+    reference=reference
+)
+
+save(hiv_treatment_drop_out_annual)
+
+```
+
+As well as treatment recruitment. High and low are WAG.
+
+```python
+
+reference = Reference(name="Allistar")
+
+hiv_treatment_recruitment = Raw_input(
+    name="HIV treatment recruitment all states",
+    slug="hiv_treatment_recruitment",
+    value=0.1,
+    low=0.05,
+    high=0.15,
+    reference=reference
+)
+
+save(hiv_treatment_recruitment)
+```
+
+
+##HIV mortality
+
+We can now look at mortality estimates from each of the different HIV states. Individuals cannot die of HIV in the acute phase.
+
+```python
+reference = Reference(name="Allistar")
+
+early_hiv_mortality_annual = Raw_input(
+    name="Early HIV mortality annual",
+    slug="early_hiv_mortality_annual",
+    value=0.008,
+    low=0.006,
+    high=0.01,
+    reference=reference
+)
+
+save(early_hiv_mortality_annual)
+```
+
+And

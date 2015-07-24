@@ -2,5 +2,7 @@
 
 SHELL = /usr/local/bin/fish
 
-run:
-	from Flask import flask
+backup:
+	git add . -A
+	git commit -m "Update"
+	git push origin master
