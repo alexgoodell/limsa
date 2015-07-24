@@ -1825,9 +1825,45 @@ progression_of_diabetes_cvd_annual = Raw_input(
 save(progression_of_diabetes_cvd_annual)
 
 
+
 ```
 
-Transition probabilities
+###Mortality
+
+```python
+
+reference = Reference(name="WAG")
+
+mortality_from_complicated_dm_non_cvd_annual = Raw_input(
+    name="Annual mortality from complicated diabetes without CVD",
+    slug="mortality_from_complicated_dm_non_cvd_annual",
+    value=0.01,
+    low=0.005,
+    high=0.015,
+    reference=reference
+)
+
+save(mortality_from_complicated_dm_non_cvd_annual)
+
+
+reference = Reference(name="WAG")
+
+mortality_from_complicated_dm_cvd_annual = Raw_input(
+    name="Annual mortality from complicated diabetes with CVD complications",
+    slug="mortality_from_complicated_dm_cvd_annual",
+    value=0.1,
+    low=0.05,
+    high=0.15,
+    reference=reference
+)
+
+save(mortality_from_complicated_dm_cvd_annual)
+
+
+```
+    
+
+##Transition probabilities
 
 ```python
 
@@ -1847,6 +1883,9 @@ risk_of_pre_dm_qt = convert_year_to_qt(risk_of_pre_dm_annual.value)
 risk_of_uncomplicated_dm_qt = convert_year_to_qt(risk_of_uncomplicated_dm_annual.value)
 progression_of_diabetes_qt = convert_year_to_qt(progression_of_diabetes_annual.value)
 progression_of_diabetes_cvd_qt = convert_year_to_qt(progression_of_diabetes_cvd_annual.value)
+mortality_from_complicated_dm_cvd_qt = convert_year_to_qt(mortality_from_complicated_dm_cvd_annual.value) 
+mortality_from_complicated_dm_non_cvd_qt = convert_year_to_qt(mortality_from_complicated_dm_non_cvd_annual.value) 
+
 
 # Development of pre-diabetes
 
@@ -1885,6 +1924,24 @@ save(Transition_probability(
     Is_dynamic=False
 ))
 
+# Mortality from non-CVD
+
+save(Transition_probability(
+    From_state=complicated_diabetes_non_cvd_state,
+    To_state=death_state,
+    Tp_base=mortality_from_complicated_dm_non_cvd_qt,
+    Is_dynamic=False
+))
+
+# Mortality from CVD DM
+
+save(Transition_probability(
+    From_state=complicated_diabetes_cvd_state,
+    To_state=death_state,
+    Tp_base=mortality_from_complicated_dm_cvd_qt,
+    Is_dynamic=False
+))
+    
 ```
 
 We can now visualize these transition probabilites.
