@@ -882,9 +882,8 @@ disease model. Let's first build the states.
 hiv_disease_chain = Chain.query.filter_by(name="HIV disease").first()
 
 # create the chains we need
-state_names = ["Uninfected", "Early (CD4>500)", "Medium (350<CD4<500)",
-    "Late (200<CD4<350)", "Advanced (100<CD4<200)", "AIDS (CD4<100)", 
-    "Early (CD4>500)"]
+state_names = ["Uninfected", "Acute", "Early",
+    "Late", "Avdanced/AIDS" ]
 
 # save them with TB resistance chain
 for state_name in state_names:
@@ -892,9 +891,6 @@ for state_name in state_names:
     save(the_state)
     
 # print chains from database
-print State.query.filter_by(chain=hiv_disease_chain).all()
-
-
 ```
 
 
@@ -1170,5 +1166,124 @@ save(prop_male_idus)
 ```
 
 ###Disease progression
+
+TODO: This annual transition will not work because transfer from acute happens very quickly (6mo).
+
+```python
+
+reference = Reference(name="Allistar")
+
+acute_to_early_annual = Raw_input(
+    name="Annual proportion of acute that transfer to early",
+    slug="acute_to_early_annual",
+    value=1,
+    low=1,
+    high=1,
+    reference=reference
+)
+
+save(acute_to_early_annual)
+
+```
+
+Now we should look at early to late
+
+```python
+
+# same reference as before
+early_to_late_annual = Raw_input(
+    name="Early to late, annual",
+    slug="early_to_late_annual",
+    value=0.164,
+    low=0.15,
+    high=0.178,
+    reference=reference
+)
+
+save(early_to_late_annual)
+
+```
+    
+Now we should look at late to advanced/AIDS
+
+```python
+
+late_to_adv_annual = Raw_input(
+    name="Late to advanced/AIDS",
+    slug="late_to_adv_annual",
+    value=0.26,
+    low=0.23,
+    high=0.29,
+    reference=reference
+)
+
+save(late_to_adv_annual)
+    
+```
+    
+
+##Transition probabilites
+
+We do not allow reverse transitions.
+
+```python
+
+# get TB resistance chain
+hiv_disease_chain = Chain.query.filter_by(name="HIV disease").first()
+
+# Get states
+uninfected_state=State.query.filter_by(name="Uninfected",chain=hiv_disease_chain).first()
+acute_state=State.query.filter_by(name="Acute",chain=hiv_disease_chain).first()
+early_state=State.query.filter_by(name="Early",chain=hiv_disease_chain).first()
+late_state=State.query.filter_by(name="Late", chain=hiv_disease_chain).first()
+advanced_state=State.query.filter_by(name="Advanced/AIDS", chain=hiv_disease_chain).first()
+
+acute_to_early_qt = convert_year_to_qt(acute_to_early_annual.value)
+early_to_late_qt = convert_year_to_qt(early_to_late_annual.value)
+late_to_adv_qt = convert_year_to_qt(late_to_adv_annual.value)
+
+# Uninfected to acute
+save(Transition_probability(
+        From_state=uninfected_state,
+        To_state=acute_state,
+        Tp_base=0,
+        Is_dynamic=True
+    ))
+
+#Acute to early
+save(Transition_probability(
+    From_state=acute_state,
+    To_state=early_state,
+    Tp_base=acute_to_early_qt,
+    Is_dynamic=False
+))
+
+#Early to late
+
+save(Transition_probability(
+    From_state=early_state,
+    To_state=late_state,
+    Tp_base=early_to_late_qt,
+    Is_dynamic=False
+))
+    
+# Late to advanced
+
+save(Transition_probability(
+    From_state=late_state,
+    To_state=advanced_state,
+    Tp_base=late_to_adv_qt,
+    Is_dynamic=False
+))      
+
+```
+    
+Now, we can visualize this chain:
+
+```python
+link_tps_to_chains()
+visualize_chain(hiv_disease_chain)
+Image(filename='file.png')
+```
 
 
