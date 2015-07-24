@@ -1707,7 +1707,7 @@ save(Transition_probability(
 # Death rate - Women - WAG
 
 save(Transition_probability(
-    From_state=idu_male_state,
+    From_state=idu_female_state,
     To_state=death_state,
     Tp_base=0.0007,
     Is_dynamic=False
@@ -1722,4 +1722,31 @@ link_tps_to_chains()
 visualize_chain(hiv_risk_groups_chain)
 Image(filename='file.png')
 ```
+
+#Diabetes disease
+
+Now we can move on to building the diabetes related chains. Because we want treated diabetes to have a different interaction with TB than untreated diabetes, we need to have these as one chain. 
+
+```python
+# get TB chain
+diabetes_disease_and_treatment = Chain.query.filter_by(name="Diabetes disease and treatment").first()
+
+# create the chains we need
+state_names = ["No diabetes", "Pre-diabetes", 
+"Uncomplicated diabetes untreated", "Uncomplicated diabetes treated",
+ "Complicated diabetes untreated (non-CVD)", 
+ "Complicated diabetes untreated (CVD)", 
+ "Complicated diabetes treated (non-CVD)", 
+ "Complicated diabetes treated (CVD)", "Death" ]
+
+
+for state_name in state_names:
+    the_state = State(name=state_name,chain=diabetes_disease_and_treatment)
+    save(the_state)
+    
+# print chains from database
+print State.query.filter_by(chain=diabetes_disease_and_treatment).all()
+```
+
+
 
