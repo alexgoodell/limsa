@@ -1,6 +1,20 @@
 #Limsa
 _Locally-interacting Markov models for HIV, TB, DM in South Africa_
 
+TODO: Initializing the model will be a challenge, becasue there is interaction between the chains for initiail placement (ie, more HIV+ people will have TB than HIV-). In order to do this, I propose using a large table to capture all the probabilites of initiailizing in different states, stratified by other states people are in, using a tagging system I'm thinking that a structure like this would be best:
+* initialization_probabilities table, with these columns
+    - ID
+    - State_id (that person will end up in ie, TB+)
+    - Tags (ie, HIV+)
+    - Probability of initiailizing to this states
+* tags table
+    - id
+    - tag name
+* states table
+* states-tags association table (ie, join table)
+
+This will allow a person to initalize a model by looking at that model (ie, TB disease), seeing whether tags are required. If they are, the person finds their tags (ie, HIV-, man, urban) and finds the matching initialization probabilities. 
+
 This is an IPython/Jupyter notebook. It is a method for creating reproducable
 research. Essentially, it is a way to show "literate programming", or very well-
 documented code for scientific processes. It mixes normal text with code blocks
@@ -1747,6 +1761,8 @@ for state_name in state_names:
 # print chains from database
 print State.query.filter_by(chain=diabetes_disease_and_treatment).all()
 ```
+
+##Raw inputs
 
 
 
