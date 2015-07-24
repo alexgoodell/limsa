@@ -107,7 +107,7 @@ First, let's create the different chains the model will need.
 # create the chains we need
 chain_names = ['TB disease', 'TB treatment', 'TB resistance',
           'HIV disease', 'HIV treatment', 'HIV risk groups',
-          'Setting', 'Diabetes disease and treatment']
+          'Setting', 'Diabetes disease', 'Diabetes treatment']
 for chain_name in chain_names:
     the_chain = Chain(name=chain_name)
     save(the_chain)
@@ -1747,11 +1747,8 @@ diabetes_disease_and_treatment = Chain.query.filter_by(name="Diabetes disease an
 
 # create the chains we need
 state_names = ["No diabetes", "Pre-diabetes", 
-"Uncomplicated diabetes untreated", "Uncomplicated diabetes treated",
- "Complicated diabetes untreated (non-CVD)", 
- "Complicated diabetes untreated (CVD)", 
- "Complicated diabetes treated (non-CVD)", 
- "Complicated diabetes treated (CVD)", "Death" ]
+"Uncomplicated diabetes" , "Complicated diabetes (non-CVD)", 
+ "Complicated diabetes (CVD)",  "Death" ]
 
 
 for state_name in state_names:
@@ -1759,10 +1756,169 @@ for state_name in state_names:
     save(the_state)
     
 # print chains from database
-print State.query.filter_by(chain=diabetes_disease_and_treatment).all()
+State.query.filter_by(chain=diabetes_disease_and_treatment).all()
 ```
 
 ##Raw inputs
 
+
+```python
+
+reference = Reference(name="From 149, page 8. Note 2.6 RR for obese and 1.15 for elderly")
+
+# Transition from no DM to pre DM; High and low are WAG
+
+risk_of_pre_dm_annual = Raw_input(
+        name="Annual risk of developing pre-diabetes",
+        slug="risk_of_pre_dm_annual",
+        value=0.043,
+        low=0.02,
+        high=0.06,
+        reference=reference
+    )
+    
+save(risk_of_pre_dm_annual)
+  
+# Transition from pre DM to DM; same reference, High and low are WAG     
+
+reference = Reference(name="WAG")
+
+risk_of_uncomplicated_dm_annual = Raw_input(
+    name="Annual risk of developing diabetes from pre-diabetes",
+    slug="risk_of_uncomplicated_dm_annual",
+    value=0.0135,
+    low=0.01,
+    high=0.03,
+    reference=reference
+)
+
+save(risk_of_uncomplicated_dm_annual)
+
+# Annual progression uncomplicated to complicated non-CVD, WAG
+
+reference = Reference(name="WAG")
+
+progression_of_diabetes_annual = Raw_input(
+    name="Annual progression uncomplicated to complicated non-CVD",
+    slug="progression_of_diabetes_annual",
+    value=0.1,
+    low=0.05,
+    high=0.15,
+    reference=reference
+)
+
+save(progression_of_diabetes_annual)
+
+# Annual progression complicated non-CVD to complicated CVD, WAG
+
+reference = Reference(name="WAG")
+
+progression_of_diabetes_cvd_annual = Raw_input(
+    name="Annual progression complicated non-CVD to CVD",
+    slug="progression_of_diabetes_cvd_annual",
+    value=0.1,
+    low=0.05,
+    high=0.15,
+    reference=reference
+)
+
+save(progression_of_diabetes_cvd_annual)
+
+
+```
+
+Transition probabilities
+
+```python
+
+# get TB resistance chain
+dm_disease_chain = Chain.query.filter_by(name="DM disease").first()
+
+# Get states
+
+no_diabetes_state =  State.query.filter_by(name="No diabetes",chain=dm_disease_chain).first()
+pre_diabetes_state =  State.query.filter_by(name="Pre-diabetes",chain=dm_disease_chain).first()
+uncomplicated_diabetes_state =  State.query.filter_by(name="Uncomplicated diabetes",chain=dm_disease_chain).first()
+complicated_diabetes_non_cvd_state =  State.query.filter_by(name="Complicated diabetes (non-CVD)",chain=dm_disease_chain).first()
+complicated_diabetes_cvd_state =  State.query.filter_by(name="Complicated diabetes (CVD)",chain=dm_disease_chain).first()
+death_state =  State.query.filter_by(name="Death",chain=dm_disease_chain).first()
+
+risk_of_pre_dm_qt = convert_year_to_qt(risk_of_pre_dm_annual.value)
+risk_of_uncomplicated_dm_qt = convert_year_to_qt(risk_of_uncomplicated_dm_annual.value)
+progression_of_diabetes_qt = convert_year_to_qt(progression_of_diabetes_annual.value)
+progression_of_diabetes_cvd_qt = convert_year_to_qt(progression_of_diabetes_cvd_annual.value)
+
+# Development of pre-diabetes
+
+save(Transition_probability(
+    From_state=no_diabetes_state,
+    To_state=pre_diabetes_state,
+    Tp_base=risk_of_pre_dm_qt,
+    Is_dynamic=False
+))
+
+# Development of diabetes
+
+save(Transition_probability(
+    From_state=pre_diabetes_state,
+    To_state=uncomplicated_diabetes_state,
+    Tp_base=risk_of_uncomplicated_dm_qt,
+    Is_dynamic=False
+))
+
+# Progression to complicated diabetes
+
+save(Transition_probability(
+    From_state=uncomplicated_diabetes_state,
+    To_state=complicated_diabetes_non_cvd_state,
+    Tp_base=progression_of_diabetes_qt,
+    Is_dynamic=False
+))
+
+
+# Progression from complicated to CVD complications
+
+save(Transition_probability(
+    From_state=complicated_diabetes_non_cvd_state,
+    To_state=complicated_diabetes_cvd_state,
+    Tp_base=progression_of_diabetes_cvd_qt,
+    Is_dynamic=False
+))
+
+```
+
+We can now visualize these transition probabilites.
+
+```python
+link_tps_to_chains()
+visualize_chain(dm_disease_chain)
+Image(filename='file.png')
+```
+
+
+# Diabtes treatment
+```python
+
+# Transition from untreated uncomplicated to treated uncomplicated; WAG
+
+treatment_uptake_uncomplicated_dm_annual = Raw_input(
+   name="Annual treatment uptake, uncomplicated diabetes",
+   slug="treatment_uptake_uncomplicated_dm_annual",
+   value=0.1,
+   low=0.05,
+   high=0.15,
+   reference=reference
+)
+       
+save(treatment_uptake_uncomplicated_dm_annual)
+
+
+
+# Annual progression of untreated non-CVD to CVD
+
+
+#Annual progression from uncomplicated untreated DM to complicated, 
+    
+```
 
 
