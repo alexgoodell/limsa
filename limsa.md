@@ -1221,6 +1221,56 @@ save(late_to_adv_annual)
     
 ```
     
+##HIV mortality
+
+We can now look at mortality estimates from each of the different HIV states. Individuals cannot die of HIV in the acute phase.
+
+```python
+#same reference as above
+early_hiv_mortality_annual = Raw_input(
+    name="Early HIV mortality annual",
+    slug="early_hiv_mortality_annual",
+    value=0.008,
+    low=0.006,
+    high=0.01,
+    reference=reference
+)
+
+save(early_hiv_mortality_annual)
+```
+
+And late phase
+
+```python
+#same reference as above
+late_hiv_mortality_annual = Raw_input(
+    name="Late HIV mortality annual",
+    slug="late_hiv_mortality_annual",
+    value=0.09,
+    low=0.08,
+    high=0.1,
+    reference=reference
+)
+
+save(late_hiv_mortality_annual)
+```
+
+And Advanced/AIDS
+
+```python
+#same reference as above
+advanced_hiv_mortality_annual = Raw_input(
+    name="Advanced HIV mortality annual",
+    slug="advanced_hiv_mortality_annual",
+    value=0.45,
+    low=0.4,
+    high=0.5,
+    reference=reference
+)
+
+save(advanced_hiv_mortality_annual)
+```
+
 
 ##Transition probabilites
 
@@ -1237,10 +1287,17 @@ acute_state=State.query.filter_by(name="Acute",chain=hiv_disease_chain).first()
 early_state=State.query.filter_by(name="Early",chain=hiv_disease_chain).first()
 late_state=State.query.filter_by(name="Late", chain=hiv_disease_chain).first()
 advanced_state=State.query.filter_by(name="Advanced/AIDS", chain=hiv_disease_chain).first()
+death_state=State.query.filter_by(name="Death", chain=hiv_disease_chain).first()
 
 acute_to_early_qt = convert_year_to_qt(acute_to_early_annual.value)
 early_to_late_qt = convert_year_to_qt(early_to_late_annual.value)
 late_to_adv_qt = convert_year_to_qt(late_to_adv_annual.value)
+
+```
+
+### TPs in disease state
+
+```python
 
 # Uninfected to acute
 save(Transition_probability(
@@ -1278,6 +1335,43 @@ save(Transition_probability(
 
 ```
     
+###Mortality TPs
+
+```python
+
+early_hiv_mortality_qt = convert_year_to_qt(early_hiv_mortality_annual.value)
+late_hiv_mortality_qt = convert_year_to_qt(late_hiv_mortality_annual.value)
+advanced_hiv_mortality_qt = convert_year_to_qt(advanced_hiv_mortality_annual.value)
+
+
+#Early to death
+
+save(Transition_probability(
+    From_state=early_state,
+    To_state=death_state,
+    Tp_base=early_hiv_mortality_qt,
+    Is_dynamic=False
+))
+    
+# Late to death
+
+save(Transition_probability(
+    From_state=late_state,
+    To_state=death_state,
+    Tp_base=late_hiv_mortality_qt,
+    Is_dynamic=False
+))    
+
+# Advanced to death
+
+save(Transition_probability(
+    From_state=advanced_state,
+    To_state=death_state,
+    Tp_base=advanced_hiv_mortality_qt,
+    Is_dynamic=False
+))    
+```
+
 Now, we can visualize this chain:
 
 ```python
@@ -1288,6 +1382,22 @@ Image(filename='file.png')
 
 
 #HIV treatment
+
+First, let's build the states.
+
+```python
+# get TB chain
+hiv_treatment_chain = Chain.query.filter_by(name="HIV treatment").first()
+
+# create the chains we need
+state_names = ['Uninfected', "Untreated", "Treated" ,'Death']
+for state_name in state_names:
+    the_state = State(name=state_name,chain=hiv_treatment_chain)
+    save(the_state)
+    
+# print chains from database
+State.query.filter_by(chain=hiv_treatment_chain).all()
+```
 
 ##Raw inputs
 
@@ -1314,38 +1424,68 @@ As well as treatment recruitment. High and low are WAG.
 
 ```python
 
-reference = Reference(name="Allistar")
+#same reference as above
 
-hiv_treatment_recruitment = Raw_input(
+hiv_treatment_recruitment_annual = Raw_input(
     name="HIV treatment recruitment all states",
-    slug="hiv_treatment_recruitment",
+    slug="hiv_treatment_recruitment_annual",
     value=0.1,
     low=0.05,
     high=0.15,
     reference=reference
 )
 
-save(hiv_treatment_recruitment)
+save(hiv_treatment_recruitment_annual)
 ```
 
+##Transition probabilites
 
-##HIV mortality
-
-We can now look at mortality estimates from each of the different HIV states. Individuals cannot die of HIV in the acute phase.
+Now we can build the transition probabilities.
 
 ```python
-reference = Reference(name="Allistar")
+# get TB resistance chain
+tb_treatment_chain = Chain.query.filter_by(name="TB treatment").first()
 
-early_hiv_mortality_annual = Raw_input(
-    name="Early HIV mortality annual",
-    slug="early_hiv_mortality_annual",
-    value=0.008,
-    low=0.006,
-    high=0.01,
-    reference=reference
-)
+# convert annual to quarterly
+hiv_treatment_drop_out_qt = convert_year_to_qt(hiv_treatment_drop_out_annual.value)
+hiv_treatment_recruitment_qt = convert_year_to_qt(hiv_treatment_recruitment_annual.value)
 
-save(early_hiv_mortality_annual)
+# Get states
+uninfected_state=State.query.filter_by(name="Uninfected",chain=hiv_treatment_chain).first()
+untreated_state=State.query.filter_by(name="Untreated",chain=hiv_treatment_chain).first()
+treated_state=State.query.filter_by(name="Treated", chain=hiv_treatment_chain).first()
+death_state=State.query.filter_by(name="Death", chain=hiv_treatment_chain).first()
+
+# Uninfected to untreated
+save(Transition_probability(
+    From_state=uninfected_state,
+    To_state=untreated_state,
+    Is_dynamic=True
+))
+
+# Untreated to treated
+save(Transition_probability(
+    From_state=untreated_state,
+    To_state=treated_state,
+    Tp_base=hiv_treatment_recruitment_qt,
+    Is_dynamic=False
+))
+
+# Treated to untreated (ie, drop outs)
+save(Transition_probability(
+    From_state=treated_state,
+    To_state=untreated_state,
+    Tp_base=hiv_treatment_drop_out_qt,
+    Is_dynamic=False
+))
 ```
 
-And
+We can now visualize this chain.
+
+```python
+link_tps_to_chains()
+visualize_chain(hiv_treatment_chain)
+Image(filename='file.png')
+```
+
+
