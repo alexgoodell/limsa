@@ -1489,3 +1489,237 @@ Image(filename='file.png')
 ```
 
 
+#HIV risk groups
+
+In addition to the disease chains, we need a demopgraphics chain to allow for the calculation of dynamic transition probabilities for the HIV infection transition.
+
+
+```python
+# get TB chain
+hiv_risk_groups_chain = Chain.query.filter_by(name="HIV risk groups").first()
+
+# create the chains we need
+state_names = ['General population male', 'General population female', 'Sex worker', 'IDU male', 'IDU female', 'MSM', 'Death']
+for state_name in state_names:
+    the_state = State(name=state_name,chain=hiv_risk_groups_chain)
+    save(the_state)
+    
+# print chains from database
+State.query.filter_by(chain=hiv_risk_groups_chain).all()
+```
+
+##Raw inputs
+
+First, let's record how many people are in each category.
+
+```python
+
+reference = Reference(name="WDI 2011, http://data.worldbank.org/country/south-africa")
+
+# Men
+
+num_gen_pop_men = Raw_input(
+    name="Number of general population men",
+    slug="num_gen_pop_men",
+    value=13351277,
+    low=13351277,
+    high=13351277,
+    reference=reference
+)
+
+save(num_gen_pop_men)
+
+# Women
+
+reference = Reference(name="http://www.prb.org/pdf11/world-women-girls-2011-data-sheet.pdf, 2011")
+
+num_gen_pop_women = Raw_input(
+    name="Number of general population women",
+    slug="num_gen_pop_women",
+    value=13621000,
+    low=13621000,
+    high=13621000,
+    reference=reference
+)
+
+save(num_gen_pop_women)
+
+# IDU
+
+reference = Reference(name="2009 http://www.harmreductionjournal.com/content/6/1/24/table/T2 table 2    IDU prevalence in 2008 was 0.15% of the population *value was extrapolated")
+
+num_idu = Raw_input(
+    name="Number of IDUs",
+    slug="num_idu",
+    value=13621000,
+    low=13621000,
+    high=13621000,
+    reference=reference
+)
+
+save(num_idu)
+
+# MSM
+
+reference = Reference(name="2006 study of rural south african men, Factors associated with HIV sero-positivity in young, rural South African men, http://www.ncbi.nlm.nih.gov/pubmed/17030525    3.6% extrapolated to total population of men ** limited sample area")
+
+num_msm = Raw_input(
+    name="Number of MSM",
+    slug="num_msm",
+    value=13621000,
+    low=13621000,
+    high=13621000,
+    reference=reference
+)
+
+save(num_msm)
+    
+# CSW
+
+reference = Reference(name="Assumed, 0.2% of women")
+
+num_csw = Raw_input(
+    name="Number of CSW",
+    slug="num_csw",
+    value=27242,
+    low=27242,
+    high=27242,
+    reference=reference
+)
+
+save(num_csw)
+
+```
+
+##Transition probabilites
+
+Since data is lacking regarding the transition from one demopgraphic group to the next, many of these variabels will need to be determined through calibration. Also, many of these variables don't have "raw data" associated with them, so you will note that we're adding values directly into the transition probabilites. 
+
+```python
+# get TB resistance chain
+hiv_risk_groups_chain = Chain.query.filter_by(name="HIV risk groups").first()
+
+# Get states
+
+general_population_male_state =State.query.filter_by(name="General population male", chain=hiv_risk_groups_chain).first()
+general_population_female_state =State.query.filter_by(name="General population female", chain=hiv_risk_groups_chain).first()
+sex_worker_state =State.query.filter_by(name="Sex worker", chain=hiv_risk_groups_chain).first()
+idu_male_state =State.query.filter_by(name="IDU male", chain=hiv_risk_groups_chain).first()
+idu_female_state =State.query.filter_by(name="IDU female", chain=hiv_risk_groups_chain).first()
+msm_state =State.query.filter_by(name="MSM", chain=hiv_risk_groups_chain).first()
+death_state =State.query.filter_by(name="Death", chain=hiv_risk_groups_chain).first()
+
+```
+
+
+###Sex workers
+
+```python
+ 
+# Initiation rate - WAG
+
+save(Transition_probability(
+    From_state=general_population_female_state,
+    To_state=sex_worker_state,
+    Tp_base=0.01,
+    Is_dynamic=False
+))
+
+# Quit rate - WAG
+
+save(Transition_probability(
+    From_state=sex_worker_state,
+    To_state=general_population_female_state,
+    Tp_base=0.01,
+    Is_dynamic=False
+))
+
+```
+
+###MSM
+
+```python
+ 
+# Initiation rate - WAG
+
+save(Transition_probability(
+    From_state=general_population_male_state,
+    To_state=msm_state,
+    Tp_base=0.0027,
+    Is_dynamic=False
+))
+    
+
+```
+
+
+###IDUs
+
+```python
+
+# Initiation rate - Men - WAG
+
+save(Transition_probability(
+    From_state=general_population_male_state,
+    To_state=idu_male_state,
+    Tp_base=0.0008,
+    Is_dynamic=False
+))
+
+# Initiation rate - Women - WAG
+
+save(Transition_probability(
+    From_state=general_population_female_state,
+    To_state=idu_female_state,
+    Tp_base=0.0006,
+    Is_dynamic=False
+))
+
+# Quit rate - Men - WAG
+
+save(Transition_probability(
+    From_state=idu_male_state,
+    To_state=general_population_male_state,
+    Tp_base=0.0007,
+    Is_dynamic=False
+))
+
+# Quit rate - Women - WAG
+
+save(Transition_probability(
+    From_state=idu_female_state,
+    To_state=general_population_female_state,
+    Tp_base=0.0007,
+    Is_dynamic=False
+))
+
+# IDUs have a higher death rate - this additional death rate occurs on top of normal death rate - TODO: Is this a realistic number?
+
+# Death rate - Men - WAG
+
+save(Transition_probability(
+    From_state=idu_male_state,
+    To_state=death_state,
+    Tp_base=0.0007,
+    Is_dynamic=False
+))
+
+# Death rate - Women - WAG
+
+save(Transition_probability(
+    From_state=idu_male_state,
+    To_state=death_state,
+    Tp_base=0.0007,
+    Is_dynamic=False
+))
+
+```
+
+We can now visualize this chain. 
+
+```python
+link_tps_to_chains()
+visualize_chain(hiv_risk_groups_chain)
+Image(filename='file.png')
+```
+
